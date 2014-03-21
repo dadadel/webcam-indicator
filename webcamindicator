@@ -1,0 +1,94 @@
+#!/usr/bin/env python
+
+import gtk
+import appindicator
+import os
+import time
+import threading
+
+DEVICE_CAM = '/dev/video0'
+
+def is_cam_on():
+    """
+    Check the existance of the webcam device
+
+    :returns: True if found else False
+
+    """
+    result = os.path.exists(DEVICE_CAM)
+    return result
+
+class IndicateCam(object):
+    """
+    Set an appindicator icon on/off to know if the webcam device is ready
+    to be used or not. Thus, it indicates if the webcam can be used or not.
+    A Quit menu allows to stop the appindicator.
+
+    """
+    def __init__(self, icon_path, icon_on, icon_off):
+        """
+        Runs the app.
+
+        :param icon_path: The folder containing the icons on/off
+        :param icon_on: The name of the icon on file
+        :param icon_off: The name of the icon off file
+
+        """
+        self.path = icon_path
+        self.icon = [icon_off, icon_on]
+        self.curr_icon = 0
+        self.last_icon = 0
+        self.set_cam_status_icon()
+        self.ind = appindicator.Indicator('cam_active_indicator', 
+                            self.path + self.icon[self.curr_icon], 
+                            appindicator.CATEGORY_HARDWARE)
+        self.ind.set_status (appindicator.STATUS_ACTIVE)
+        m = gtk.Menu()
+        qi = gtk.MenuItem('Quit')
+
+        m.append(qi)
+
+        self.ind.set_menu(m)
+        qi.show()
+
+        qi.connect('activate', self.quit)
+        self.thread = threading.Thread(target=self.poll_cam, name='indic_cam_poll')
+        self.thread.start()
+        gtk.gdk.threads_init()
+        gtk.main()
+
+    def poll_cam(self):
+        """Check the device and update the icon status"""
+        while(True):
+            self.change()
+            time.sleep(0.3)
+
+    def set_cam_status_icon(self):
+        """Set the icon status"""
+        if is_cam_on():
+            self.curr_icon = 1
+        else:
+            self.curr_icon = 0
+
+    def change(self):
+        """Change the appindicator icon showed"""
+        self.set_cam_status_icon()
+        if self.curr_icon != self.last_icon:
+            self.ind.set_icon(self.path + self.icon[self.curr_icon])
+            self.last_icon = self.curr_icon
+
+    def quit(self, item):
+        """
+        Stop the indicator application.
+
+        """
+        self.thread._Thread__stop()
+        gtk.main_quit()
+
+
+if __name__ == "__main__":
+    # Set the path to your pictures
+    path = '/opt/images/'
+    iconoff = 'cam-off.png'
+    iconon = 'cam-on.png'
+    i = IndicateCam(path, iconon, iconoff)
