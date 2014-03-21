@@ -10,6 +10,8 @@ So I wrote this appindicator to know under Unity the status of the webcam.
 It is very basic as it will only check existance of the device file, but it
 remains helpfull.
 
+It depends on modules python-appindicator and gtk.
+
 To use it, you can put it for instance in **/opt/webcamindicator**.
 Update in the script the icons path.
 Then you can launch *Startup Applications* and add that script.
